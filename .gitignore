@@ -1,0 +1,17 @@
+# Dependency directories
+node_modules/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Playwright output
+test-results/
+playwright-report/
+blob-report/
+playwright/.local-browsers/
+
+# Note: DO NOT ignore *.png files, as baseline images in tests/ must be checked in!
+
+# OS files
+.DS_Store
+Thumbs.db
