@@ -1,0 +1,69 @@
+name: Visual Regression CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Get Playwright Version
+      run: |
+        PLAYWRIGHT_VERSION=$(npm list @playwright/test --depth=0 | grep @playwright/test | sed 's/.*@//')
+        echo "PLAYWRIGHT_VERSION=$PLAYWRIGHT_VERSION" >> $GITHUB_ENV
+
+    - name: Cache Playwright Browsers
+      uses: actions/cache@v4
+      id: playwright-cache
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ runner.os }}-playwright-${{ env.PLAYWRIGHT_VERSION }}
+        restore-keys: |
+          ${{ runner.os }}-playwright-
+
+    - name: Install Playwright Browsers & Deps
+      if: steps.playwright-cache.outputs.cache-hit != 'true'
+      run: npx playwright install --with-deps
+
+    - name: Install Playwright System Dependencies (cache hit)
+      if: steps.playwright-cache.outputs.cache-hit == 'true'
+      run: npx playwright install-deps
+
+    - name: Run Playwright Visual Tests
+      run: npm run test
+
+    - name: Auto-update visual baseline snapshots on failure
+      if: failure()
+      run: |
+        npm run test:update
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git add tests/visual/
+        git commit -m "chore: auto-update visual baseline snapshots for Linux [skip ci]" || echo "No changes to commit"
+        git push
+
+    - name: Upload Visual Snapshot Diffs on Failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: visual-regression-diffs
+        path: |
+          test-results/
+          playwright-report/
+        retention-days: 14
