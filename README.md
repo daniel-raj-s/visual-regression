@@ -71,3 +71,8 @@ Once baselines exist, run the visual check suite:
 # Execute pixel-comparison checks
 npm run test
 ```
+
+---
+
+> [!TIP]
+> You can manually trigger a full visual regression check and baseline update on GitHub Actions at any time using the **"Run workflow"** button inside the repository's Actions tab.
